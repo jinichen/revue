@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { getReconciliation } from '@/services/reconciliationService';
+import { getReconciliation } from '@/services/billingService';
 import { BillingConfig } from '@/types';
 import { FileText, FileJson, Download, Copy } from 'lucide-react';
 
