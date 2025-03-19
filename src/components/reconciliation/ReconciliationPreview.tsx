@@ -70,13 +70,13 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
             // 从API获取数据并即时生成
             console.log("Fetching from API");
             try {
-              const result = await getReconciliation(billingConfig, currentPage, pageSize);
+            const result = await getReconciliation(billingConfig, currentPage, pageSize);
               console.log("API result:", result);
               
               if (result && result.items) {
-                setData(result);
-                if (displayFormat === 'markdown') {
-                  setMarkdownContent(generateMarkdown(result));
+            setData(result);
+            if (displayFormat === 'markdown') {
+              setMarkdownContent(generateMarkdown(result));
                 }
               } else {
                 console.log("API returned empty or invalid result:", result);
@@ -340,161 +340,161 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
 
   return (
     <div className="space-y-4">
-      <div className="bg-card rounded-lg border shadow-sm p-4">
-        <div className="flex justify-between items-center mb-4">
-          <div className="font-medium">
-            {data?.orgName || billingConfig.orgId} {formatChineseDate(billingConfig.periodStart)}对账单
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={toggleFormat}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50"
-              title={displayFormat === 'table' ? '切换到Markdown格式' : '切换到表格格式'}
-            >
-              {displayFormat === 'table' ? (
-                <>
-                  <FileText size={16} />
-                  <span>MD格式</span>
-                </>
-              ) : (
-                <>
-                  <FileJson size={16} />
-                  <span>表格格式</span>
-                </>
-              )}
-            </button>
-            {displayFormat === 'markdown' && (
+    <div className="bg-card rounded-lg border shadow-sm p-4">
+      <div className="flex justify-between items-center mb-4">
+        <div className="font-medium">
+          {data?.orgName || billingConfig.orgId} {formatChineseDate(billingConfig.periodStart)}对账单
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={toggleFormat}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50"
+            title={displayFormat === 'table' ? '切换到Markdown格式' : '切换到表格格式'}
+          >
+            {displayFormat === 'table' ? (
               <>
-                <button
-                  onClick={copyMarkdownToClipboard}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50"
-                  title="复制Markdown"
-                >
-                  <Copy size={16} />
-                  <span>复制</span>
-                </button>
-                <button
-                  onClick={downloadMarkdownFile}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50"
-                  title="下载Markdown文件"
-                >
-                  <Download size={16} />
-                  <span>下载</span>
-                </button>
+                <FileText size={16} />
+                <span>MD格式</span>
+              </>
+            ) : (
+              <>
+                <FileJson size={16} />
+                <span>表格格式</span>
               </>
             )}
-          </div>
-        </div>
-        <div className="text-sm mb-4 text-gray-500">
-          账单周期: {formatDate(billingConfig.periodStart)} - {formatDate(billingConfig.periodEnd)}
-          {RECONCILIATION_SOURCE_TYPE === 'file' && (
-            <span className="ml-2 text-blue-500">(使用预生成文件)</span>
+          </button>
+          {displayFormat === 'markdown' && (
+            <>
+              <button
+                onClick={copyMarkdownToClipboard}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50"
+                title="复制Markdown"
+              >
+                <Copy size={16} />
+                <span>复制</span>
+              </button>
+              <button
+                onClick={downloadMarkdownFile}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50"
+                title="下载Markdown文件"
+              >
+                <Download size={16} />
+                <span>下载</span>
+              </button>
+            </>
           )}
         </div>
+      </div>
+      <div className="text-sm mb-4 text-gray-500">
+        账单周期: {formatDate(billingConfig.periodStart)} - {formatDate(billingConfig.periodEnd)}
+        {RECONCILIATION_SOURCE_TYPE === 'file' && (
+          <span className="ml-2 text-blue-500">(使用预生成文件)</span>
+        )}
+      </div>
 
-        {displayFormat === 'table' && data?.items ? (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2 px-3 text-left font-medium">客户名</th>
-                  <th className="py-2 px-3 text-left font-medium">模式</th>
-                  <th className="py-2 px-3 text-left font-medium">日期</th>
-                  <th className="py-2 px-3 text-left font-medium">返回码</th>
-                  <th className="py-2 px-3 text-left font-medium">返回信息</th>
+      {displayFormat === 'table' && data?.items ? (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="py-2 px-3 text-left font-medium">客户名</th>
+                <th className="py-2 px-3 text-left font-medium">模式</th>
+                <th className="py-2 px-3 text-left font-medium">日期</th>
+                <th className="py-2 px-3 text-left font-medium">返回码</th>
+                <th className="py-2 px-3 text-left font-medium">返回信息</th>
                   <th className="py-2 px-3 text-left font-medium">是否有效</th>
-                  <th className="py-2 px-3 text-right font-medium">统计</th>
-                </tr>
-              </thead>
-              <tbody>
+                <th className="py-2 px-3 text-right font-medium">统计</th>
+              </tr>
+            </thead>
+            <tbody>
                 {data.items.map((item: any, index: number) => {
                   // 有效认证返回码列表
                   const validResultCodes = ['0', '200004', '210001', '210002', '210004', '210005', '210006', '210009'];
                   const isValid = validResultCodes.includes(item.result_code);
                   
                   return (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="py-2 px-3">{item.org_name || '-'}</td>
-                    <td className="py-2 px-3">{item.auth_mode}</td>
-                    <td className="py-2 px-3">{formatDate(item.exec_start_time)}</td>
-                    <td className="py-2 px-3">{item.result_code}</td>
-                    <td className="py-2 px-3">{item.result_msg}</td>
+                <tr key={index} className="border-b hover:bg-gray-50">
+                  <td className="py-2 px-3">{item.org_name || '-'}</td>
+                  <td className="py-2 px-3">{item.auth_mode}</td>
+                  <td className="py-2 px-3">{formatDate(item.exec_start_time)}</td>
+                  <td className="py-2 px-3">{item.result_code}</td>
+                  <td className="py-2 px-3">{item.result_msg}</td>
                     <td className="py-2 px-3">{isValid ? '是' : '否'}</td>
-                    <td className="py-2 px-3 text-right">{item.count}</td>
-                  </tr>
+                  <td className="py-2 px-3 text-right">{item.count}</td>
+                </tr>
                 );})}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="bg-gray-50 p-4 rounded-md overflow-auto">
-            <pre className="text-sm whitespace-pre-wrap font-mono">
-              {RECONCILIATION_SOURCE_TYPE === 'file' ? markdownContent : generateMarkdown(data)}
-            </pre>
-          </div>
-        )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="bg-gray-50 p-4 rounded-md overflow-auto">
+          <pre className="text-sm whitespace-pre-wrap font-mono">
+            {RECONCILIATION_SOURCE_TYPE === 'file' ? markdownContent : generateMarkdown(data)}
+          </pre>
+        </div>
+      )}
 
-        {/* 分页控件 - 仅在使用API生成方式且有多页数据时显示 */}
-        {RECONCILIATION_SOURCE_TYPE === 'generate' && data?.totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-500">
-              显示 {data.items.length} 条，共 {data.totalCount} 条
-              (第 {data.currentPage} 页，共 {data.totalPages} 页)
-            </div>
-            <div className="flex space-x-2">
-              <button
-                className={`px-3 py-1 text-sm rounded border ${
-                  currentPage <= 1 
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                    : 'bg-white hover:bg-gray-50'
-                }`}
-                onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                disabled={currentPage <= 1}
-              >
-                上一页
-              </button>
-              
-              {(() => {
-                const pageButtons = [];
-                const startPage = Math.max(1, data.currentPage - 2);
-                const endPage = Math.min(data.totalPages, startPage + 4);
-                
-                for (let page = startPage; page <= endPage; page++) {
-                  pageButtons.push(
-                    <button
-                      key={page}
-                      className={`px-3 py-1 text-sm rounded border ${
-                        page === data.currentPage 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-white hover:bg-gray-50'
-                      }`}
-                      onClick={() => handlePageChange(page)}
-                    >
-                      {page}
-                    </button>
-                  );
-                }
-                
-                return pageButtons;
-              })()}
-              
-              <button
-                className={`px-3 py-1 text-sm rounded border ${
-                  currentPage >= data.totalPages 
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                    : 'bg-white hover:bg-gray-50'
-                }`}
-                onClick={() => currentPage < data.totalPages && handlePageChange(currentPage + 1)}
-                disabled={currentPage >= data.totalPages}
-              >
-                下一页
-              </button>
-            </div>
+      {/* 分页控件 - 仅在使用API生成方式且有多页数据时显示 */}
+      {RECONCILIATION_SOURCE_TYPE === 'generate' && data?.totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-gray-500">
+            显示 {data.items.length} 条，共 {data.totalCount} 条
+            (第 {data.currentPage} 页，共 {data.totalPages} 页)
           </div>
-        )}
+          <div className="flex space-x-2">
+            <button
+              className={`px-3 py-1 text-sm rounded border ${
+                currentPage <= 1 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                  : 'bg-white hover:bg-gray-50'
+              }`}
+              onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+            >
+              上一页
+            </button>
+            
+            {(() => {
+              const pageButtons = [];
+              const startPage = Math.max(1, data.currentPage - 2);
+              const endPage = Math.min(data.totalPages, startPage + 4);
+              
+              for (let page = startPage; page <= endPage; page++) {
+                pageButtons.push(
+                  <button
+                    key={page}
+                    className={`px-3 py-1 text-sm rounded border ${
+                      page === data.currentPage 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-white hover:bg-gray-50'
+                    }`}
+                    onClick={() => handlePageChange(page)}
+                  >
+                    {page}
+                  </button>
+                );
+              }
+              
+              return pageButtons;
+            })()}
+            
+            <button
+              className={`px-3 py-1 text-sm rounded border ${
+                currentPage >= data.totalPages 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                  : 'bg-white hover:bg-gray-50'
+              }`}
+              onClick={() => currentPage < data.totalPages && handlePageChange(currentPage + 1)}
+              disabled={currentPage >= data.totalPages}
+            >
+              下一页
+            </button>
+          </div>
+        </div>
+      )}
 
-        <div className="mt-4 text-sm text-gray-500">
-          总计: {data?.totalCount || 0} 次认证
+      <div className="mt-4 text-sm text-gray-500">
+        总计: {data?.totalCount || 0} 次认证
         </div>
       </div>
     </div>

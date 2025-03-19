@@ -123,12 +123,12 @@ export default function ReconciliationForm({ initialConfig, onConfigChange }: Re
           setError('返回的数据格式不正确');
         }
         break;
-        
-      } catch (err) {
+      
+    } catch (err) {
         console.error(`获取对账单失败 (尝试 ${retryCount + 1}/${maxRetries}):`, err);
         
         if (retryCount === maxRetries - 1) {
-          if (err instanceof Error) {
+      if (err instanceof Error) {
             if (err.message.includes('ECONNRESET') || err.message.includes('ETIMEDOUT')) {
               setError('网络连接不稳定，请检查网络后重试');
             } else {
@@ -188,7 +188,7 @@ export default function ReconciliationForm({ initialConfig, onConfigChange }: Re
       }
     };
     
-    fetchOrganizations();
+      fetchOrganizations();
   }, [organizations.length, setOrganizations]);
   
   // Update parent component when form state changes
@@ -237,40 +237,40 @@ export default function ReconciliationForm({ initialConfig, onConfigChange }: Re
         <div className="w-full md:w-64">
           <div className="bg-card rounded-lg border p-4 shadow-sm">
             <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-              {/* 客户选择 */}
+        {/* 客户选择 */}
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">客户名</label>
-                <select
+          <select
                   className="w-full p-2 border rounded-md bg-background text-sm"
-                  value={formState.orgId}
-                  onChange={(e) => handleChange('orgId', e.target.value)}
-                  disabled={loadingOrgs || loading}
-                >
-                  <option value="">选择客户</option>
-                  {organizations.map((org) => (
-                    <option key={org.org_id} value={org.org_id}>
-                      {org.org_name}
-                    </option>
-                  ))}
-                </select>
-                {loadingOrgs && (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    加载客户...
-                  </div>
-                )}
-              </div>
-              
+            value={formState.orgId}
+            onChange={(e) => handleChange('orgId', e.target.value)}
+            disabled={loadingOrgs || loading}
+          >
+            <option value="">选择客户</option>
+            {organizations.map((org) => (
+              <option key={org.org_id} value={org.org_id}>
+                {org.org_name}
+              </option>
+            ))}
+          </select>
+          {loadingOrgs && (
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              加载客户...
+            </div>
+          )}
+        </div>
+        
               {/* 日期选择 */}
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">对账日期</label>
-                <input
-                  type="date"
+          <input
+            type="date"
                   className="w-full p-2 border rounded-md bg-background text-sm"
-                  value={formState.periodStart}
-                  onChange={(e) => handleChange('periodStart', e.target.value)}
-                  disabled={loading}
-                />
+            value={formState.periodStart}
+            onChange={(e) => handleChange('periodStart', e.target.value)}
+            disabled={loading}
+          />
               </div>
             </form>
 

@@ -135,7 +135,7 @@ const generateReconciliationData = async (
     if (orgs.length === 0) {
       throw new Error('找不到指定的客户');
     }
-
+    
     const orgName = orgs[0].org_name;
     
     // 查询服务调用记录
@@ -205,7 +205,7 @@ const generateReconciliationData = async (
         }
       };
     }
-
+    
     // 格式化返回数据
     const formattedData: ReconciliationItem[] = serviceData.map(item => ({
       org_name: item.org_name,
@@ -215,7 +215,7 @@ const generateReconciliationData = async (
       result_msg: item.result_msg,
       count: Number(item.count)
     }));
-
+    
     // 计算分页
     const totalItems = serviceData.length;
     const totalPages = Math.ceil(totalItems / pageSize);
@@ -286,14 +286,14 @@ const generateReconciliationData = async (
       success: true,
       message: '获取对账单数据成功',
       data: {
-        orgId: config.orgId,
-        orgName,
-        periodStart: config.periodStart,
-        periodEnd: config.periodEnd,
+      orgId: config.orgId,
+      orgName,
+      periodStart: config.periodStart,
+      periodEnd: config.periodEnd,
         items: pagedData,
-        totalCount: totalItems,
-        totalPages,
-        currentPage: page,
+      totalCount: totalItems,
+      totalPages,
+      currentPage: page,
         pageSize,
         summary
       }
