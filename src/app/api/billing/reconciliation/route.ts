@@ -19,16 +19,55 @@ interface ReconciliationItem {
   count: number;
 }
 
+interface ReconciliationResult {
+  orgId: string;
+  orgName: string;
+  periodStart: string;
+  periodEnd: string;
+  items: ReconciliationItem[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+  summary: Array<{
+    auth_mode: string;
+    total: number;
+    success: number;
+    fail: number;
+    details: Array<{
+      result_code: string;
+      result_msg: string;
+      count: number;
+    }>;
+  }>;
+}
+
+interface ServiceLogItem {
+  org_name: string;
+  auth_mode: string;
+  auth_date: string;
+  success_count: number;
+  error_details: string | null;
+  total_count: number;
+}
+
 // 格式化日期为MySQL格式
 const formatDateForMySQL = (dateString: string): string => {
   if (!dateString) return '';
-  // 检查是否已经是MySQL日期格式（YYYY-MM-DD）
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    return dateString;
-  }
   
   try {
     const date = new Date(dateString);
+    const now = new Date();
+    
+    // 如果是未来日期，使用当前日期
+    if (date > now) {
+      console.log('检测到未来日期，使用当前日期:', {
+        inputDate: dateString,
+        currentDate: now.toISOString().split('T')[0]
+      });
+      return now.toISOString().split('T')[0];
+    }
+    
     return date.toISOString().split('T')[0];
   } catch (e) {
     console.error('Invalid date format:', dateString);
@@ -36,93 +75,71 @@ const formatDateForMySQL = (dateString: string): string => {
   }
 };
 
+// 格式化开始和结束日期
+const formatDateRange = (startDate: string, endDate: string) => {
+  const start = formatDateForMySQL(startDate);
+  const end = formatDateForMySQL(endDate);
+  
+  console.log('格式化日期范围:', {
+    原始开始日期: startDate,
+    原始结束日期: endDate,
+    处理后开始日期: start,
+    处理后结束日期: end
+  });
+  
+  // 如果开始和结束日期相同，结束日期要加上23:59:59
+  if (start === end) {
+    return {
+      start: `${start} 00:00:00`,
+      end: `${end} 23:59:59`
+    };
+  }
+  
+  return {
+    start: `${start} 00:00:00`,
+    end: `${end} 23:59:59`
+  };
+};
+
 /**
  * 从t_service_log表获取对账单数据，支持分页
  */
-const generateReconciliationData = async (config: BillingConfig, page: number = 1, pageSize: number = DEFAULT_PAGE_SIZE) => {
+const generateReconciliationData = async (
+  config: BillingConfig, 
+  page: number = 1, 
+  pageSize: number = DEFAULT_PAGE_SIZE
+) => {
   try {
-    console.log('生成对账单数据，参数:', config, '页码:', page, '每页条数:', pageSize);
-    
-    // 缓存TTL - 30分钟
-    const CACHE_TTL = 30 * 60 * 1000;
-    
-    // 生成缓存键 - 包含分页信息
-    const cacheKey = `reconciliation:${config.orgId}:${config.periodStart}:${config.periodEnd}:${page}:${pageSize}`;
-    
-    // 尝试从缓存获取
-    const cachedResult = queryCache.get(cacheKey, []);
-    if (cachedResult) {
-      console.log(`Returning cached reconciliation data for ${cacheKey}`);
-      return cachedResult;
+    if (!config.orgId) {
+      throw new Error('缺少组织ID');
     }
+
+    console.log('生成对账单数据，参数:', {
+      orgId: config.orgId,
+      periodStart: config.periodStart,
+      periodEnd: config.periodEnd
+    });
     
-    // 获取组织信息
+    // 处理日期范围
+    const dateRange = formatDateRange(config.periodStart, config.periodEnd);
+    console.log('处理后的日期范围:', dateRange);
+
+    // 先查询组织信息
     const orgQuery = `
-      SELECT 
-        org_id,
-        org_name
-      FROM 
-        t_org_info
-      WHERE 
-        org_id = ?
-      LIMIT 1
+      SELECT org_id, org_name
+      FROM t_org_info
+      WHERE org_id = ?
     `;
-    
-    console.log('执行组织查询:', orgQuery, [config.orgId]);
-    const orgs = await query(orgQuery, [config.orgId]);
-    console.log('组织查询结果:', orgs);
-    
+
+    const orgs = await query<{ org_id: string; org_name: string }>(orgQuery, [config.orgId]);
     if (orgs.length === 0) {
       throw new Error('找不到指定的客户');
     }
-    
+
     const orgName = orgs[0].org_name;
-    console.log('找到客户:', orgName);
     
-    // 优化： 先查询总条数，用于分页
-    const countQuery = `
-      SELECT 
-        COUNT(*) as total
-      FROM (
-        SELECT 
-          oi.org_name,
-          sl.auth_mode,
-          DATE(sl.exec_start_time) as auth_date,
-          sl.result_code,
-          sl.result_msg,
-          COUNT(*) as count
-        FROM 
-          t_service_log sl
-        JOIN
-          t_org_info oi ON sl.org_id = oi.org_id
-        WHERE 
-          sl.org_id = ?
-          AND sl.exec_start_time >= ?
-          AND sl.exec_start_time <= ?
-        GROUP BY 
-          oi.org_name, sl.auth_mode, auth_date, sl.result_code, sl.result_msg
-      ) as subquery
-    `;
-    
-    const [totalResult] = await query<{ total: number }>(
-      countQuery,
-      [
-        config.orgId,
-        formatDateForMySQL(config.periodStart),
-        formatDateForMySQL(config.periodEnd)
-      ],
-      CACHE_TTL
-    );
-    
-    const totalItems = totalResult?.total || 0;
-    const totalPages = Math.ceil(totalItems / pageSize);
-    
-    // 计算偏移量
-    const offset = (page - 1) * pageSize;
-    
-    // 修改查询SQL，确保SELECT、GROUP BY和ORDER BY的表达式一致
-    // 使用DATE函数处理日期，确保所有引用相同列的表达式都一致
-    const reconciliationQuery = `
+    // 查询服务调用记录
+    const serviceQuery = `
       SELECT 
         oi.org_name,
         sl.auth_mode,
@@ -136,75 +153,151 @@ const generateReconciliationData = async (config: BillingConfig, page: number = 
         t_org_info oi ON sl.org_id = oi.org_id
       WHERE 
         sl.org_id = ?
-        AND sl.exec_start_time >= ?
-        AND sl.exec_start_time <= ?
+        AND sl.exec_start_time BETWEEN ? AND ?
       GROUP BY 
-        oi.org_name, sl.auth_mode, auth_date, sl.result_code, sl.result_msg
+        oi.org_name,
+        sl.auth_mode,
+        DATE(sl.exec_start_time),
+        sl.result_code,
+        sl.result_msg
       ORDER BY 
-        auth_date DESC, 
         sl.auth_mode ASC,
-        CASE WHEN sl.result_code = '0' THEN '0' ELSE '1' || sl.result_code END ASC
-      LIMIT ?, ?
+        sl.result_code ASC
     `;
-    
-    console.log('执行对账单查询:', reconciliationQuery, [
-      config.orgId,
-      formatDateForMySQL(config.periodStart),
-      formatDateForMySQL(config.periodEnd),
-      offset,
-      pageSize
-    ]);
-    
-    const reconciliationData = await query<{
+
+    console.log('执行服务记录查询:', {
+      query: serviceQuery,
+      params: [config.orgId, dateRange.start, dateRange.end]
+    });
+
+    const serviceData = await query<{
       org_name: string;
       auth_mode: string;
       auth_date: string;
       result_code: string;
       result_msg: string;
       count: number;
-    }>(reconciliationQuery, [
-      config.orgId,
-      formatDateForMySQL(config.periodStart),
-      formatDateForMySQL(config.periodEnd),
-      offset,
-      pageSize
-    ], CACHE_TTL);
-    
-    console.log('获取到对账单数据条目数:', reconciliationData.length);
-    
-    if (reconciliationData.length > 0) {
-      console.log('对账单数据示例:', reconciliationData[0]);
-    } else {
-      console.log('未找到对账单数据');
+    }>(serviceQuery, [config.orgId, dateRange.start, dateRange.end]);
+
+    console.log('查询结果:', {
+      totalRows: serviceData.length,
+      firstRow: serviceData[0] || null,
+      dateRange,
+      orgName
+    });
+
+    // 如果没有数据，返回空结果
+    if (serviceData.length === 0) {
+      return {
+        success: true,
+        message: `未找到${orgName}在${config.periodStart}的对账单数据`,
+        data: {
+          orgId: config.orgId,
+          orgName,
+          periodStart: config.periodStart,
+          periodEnd: config.periodEnd,
+          items: [],
+          totalCount: 0,
+          totalPages: 0,
+          currentPage: page,
+          pageSize,
+          summary: []
+        }
+      };
     }
-    
+
     // 格式化返回数据
-    const formattedData: ReconciliationItem[] = reconciliationData.map(item => ({
+    const formattedData: ReconciliationItem[] = serviceData.map(item => ({
       org_name: item.org_name,
       auth_mode: item.auth_mode,
       exec_start_time: item.auth_date,
       result_code: item.result_code,
-      result_msg: item.result_msg || '',
+      result_msg: item.result_msg,
       count: Number(item.count)
     }));
-    
-    // 准备结果
-    const result = {
-      orgId: config.orgId,
-      orgName,
-      periodStart: config.periodStart,
-      periodEnd: config.periodEnd,
-      items: formattedData,
-      totalCount: totalItems,
-      totalPages,
-      currentPage: page,
-      pageSize
+
+    // 计算分页
+    const totalItems = serviceData.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const pagedData = formattedData.slice(start, end);
+
+    // 生成汇总数据，按认证方式分组
+    const summary = formattedData.reduce((acc, item) => {
+      // 查找当前认证方式的汇总记录
+      let modeEntry = acc.find(entry => entry.auth_mode === item.auth_mode);
+      
+      // 如果不存在，创建一个新的汇总记录
+      if (!modeEntry) {
+        modeEntry = {
+          auth_mode: item.auth_mode,
+          total: 0,
+          success: 0,
+          fail: 0,
+          details: []
+        };
+        acc.push(modeEntry);
+      }
+      
+      // 有效认证返回码列表
+      const validResultCodes = ['0', '200004', '210001', '210002', '210004', '210005', '210006', '210009'];
+      
+      // 更新总数
+      modeEntry.total += item.count;
+      
+      // 根据返回码判断成功或失败
+      if (validResultCodes.includes(item.result_code)) {
+        modeEntry.success += item.count;
+      } else {
+        modeEntry.fail += item.count;
+      }
+      
+      // 添加到明细中
+      const detailEntry = modeEntry.details.find(d => 
+        d.result_code === item.result_code && d.result_msg === item.result_msg
+      );
+      
+      if (detailEntry) {
+        detailEntry.count += item.count;
+      } else {
+        modeEntry.details.push({
+          result_code: item.result_code,
+          result_msg: item.result_msg,
+          count: item.count
+        });
+      }
+      
+      return acc;
+    }, [] as Array<{
+      auth_mode: string;
+      total: number;
+      success: number;
+      fail: number;
+      details: Array<{
+        result_code: string;
+        result_msg: string;
+        count: number;
+      }>;
+    }>);
+
+    // 返回完整的响应结构
+    return {
+      success: true,
+      message: '获取对账单数据成功',
+      data: {
+        orgId: config.orgId,
+        orgName,
+        periodStart: config.periodStart,
+        periodEnd: config.periodEnd,
+        items: pagedData,
+        totalCount: totalItems,
+        totalPages,
+        currentPage: page,
+        pageSize,
+        summary
+      }
     };
-    
-    // 缓存结果
-    queryCache.set(cacheKey, [], result, CACHE_TTL);
-    
-    return result;
   } catch (error) {
     console.error('对账单数据生成失败:', error);
     throw error;
@@ -216,44 +309,26 @@ const generateReconciliationData = async (config: BillingConfig, page: number = 
  */
 export async function POST(req: NextRequest) {
   try {
-    const requestData = await req.json();
-    const config = requestData.config as BillingConfig;
-    const page = Number(requestData.page || 1);
-    // 从请求参数或环境变量获取分页大小
-    const pageSize = Number(requestData.pageSize || DEFAULT_PAGE_SIZE);
+    const { config, page = 1, pageSize = DEFAULT_PAGE_SIZE } = await req.json();
     
-    console.log('收到对账单请求:', config, '页码:', page, '每页条数:', pageSize);
-    
-    // 验证必要的参数
-    if (!config.orgId || !config.periodStart || !config.periodEnd) {
+    if (!config.orgId) {
       return NextResponse.json(
-        { error: '缺少必要的参数' }, 
+        { success: false, message: '请选择客户' },
         { status: 400 }
       );
     }
     
-    // 确保页码和每页条数是合理的值
-    if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return NextResponse.json(
-        { error: '无效的分页参数' },
-        { status: 400 }
-      );
-    }
-    
-    // 获取对账单数据
-    const reconciliationData = await generateReconciliationData(config, page, pageSize);
-    
-    // 响应对账单数据
-    return NextResponse.json({
-      success: true,
-      message: '对账单数据生成成功',
-      data: reconciliationData
-    });
+    // 使用已经实现的函数生成对账单数据
+    const result = await generateReconciliationData(config, page, pageSize);
+    return NextResponse.json(result);
     
   } catch (error) {
-    console.error('对账单生成失败:', error);
+    console.error('获取对账单数据失败:', error);
     return NextResponse.json(
-      { success: false, message: '对账单生成失败', error: error instanceof Error ? error.message : '未知错误' }, 
+      { 
+        success: false, 
+        message: error instanceof Error ? error.message : '获取对账单数据失败'
+      },
       { status: 500 }
     );
   }

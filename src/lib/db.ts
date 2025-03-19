@@ -98,17 +98,30 @@ export async function query<T = Record<string, unknown>>(
   cacheTTL: number = 0 // 默认不缓存，单位毫秒
 ): Promise<T[]> {
   try {
+    console.log('执行SQL查询:', {
+      sql,
+      params,
+      cacheTTL
+    });
+    
     // 尝试从缓存获取
     if (cacheTTL > 0) {
       const cachedResult = queryCache.get<T[]>(sql, params);
       if (cachedResult) {
+        console.log('返回缓存结果');
         return cachedResult;
       }
     }
     
     const startTime = Date.now();
+    console.log('开始执行数据库查询...');
     const [rows] = await pool.query(sql, params);
     const queryTime = Date.now() - startTime;
+    
+    console.log('数据库查询完成:', {
+      timeMs: queryTime,
+      rowCount: Array.isArray(rows) ? rows.length : 0
+    });
     
     // 记录慢查询 (超过1秒的查询)
     if (queryTime > 1000) {
@@ -123,9 +136,11 @@ export async function query<T = Record<string, unknown>>(
     
     return rows as T[];
   } catch (error) {
-    console.error('Database query error:', error);
-    console.error('Query:', sql);
-    console.error('Params:', params);
+    console.error('数据库查询错误:', {
+      error,
+      sql: sql.substring(0, 200) + (sql.length > 200 ? '...' : ''),
+      params
+    });
     throw error;
   }
 }

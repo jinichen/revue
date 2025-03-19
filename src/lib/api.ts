@@ -27,6 +27,33 @@ export interface ApiResponse<T> {
 }
 
 /**
+ * 延迟函数
+ */
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * 带重试的 fetch 函数
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries: number = 3,
+  backoff: number = 1000
+): Promise<Response> {
+  try {
+    const response = await fetch(url, options);
+    return response;
+  } catch (error) {
+    if (retries > 0) {
+      console.log(`请求失败，${retries}秒后重试...`, { url, error });
+      await delay(backoff);
+      return fetchWithRetry(url, options, retries - 1, backoff * 2);
+    }
+    throw error;
+  }
+}
+
+/**
  * Generic fetch function with error handling
  */
 export async function fetchApi<T>(
@@ -34,8 +61,15 @@ export async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   try {
+    // 检查网络连接
+    if (!navigator.onLine) {
+      throw new Error('网络连接已断开，请检查网络后重试');
+    }
+
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-    const response = await fetch(url, {
+    console.log('开始请求:', { url, method: options.method || 'GET' });
+    
+    const response = await fetchWithRetry(url, {
       ...defaultOptions,
       ...options,
     });
@@ -43,30 +77,47 @@ export async function fetchApi<T>(
     // Check response status and content type before parsing JSON
     let data;
     const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      try {
-        data = await response.json();
-      } catch (error) {
-        console.error('Error parsing JSON response:', error);
-        throw new Error('响应格式无效');
-      }
-    } else {
-      // Handle non-JSON responses
+    
+    // 尝试解析响应内容
+    try {
       const text = await response.text();
-      // Try to parse it anyway, in case the content-type header is incorrect
-      try {
-        data = JSON.parse(text);
-      } catch (error) {
-        // If it's not JSON, create a simple object with the text
-        data = {
-          text,
-          success: response.ok
-        };
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          console.error('JSON解析错误:', e);
+          data = { text, success: response.ok };
+        }
+      } else {
+        data = { success: response.ok };
       }
+    } catch (error) {
+      console.error('读取响应内容失败:', error);
+      throw new Error('服务器响应异常，请重试');
     }
 
     if (!response.ok) {
-      throw new Error(data?.error || data?.message || '请求出错');
+      console.error('API响应错误:', {
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        data
+      });
+      
+      // 处理特定的错误情况
+      if (response.status === 504) {
+        throw new Error('服务器响应超时，请稍后重试');
+      } else if (response.status === 502) {
+        throw new Error('服务器暂时不可用，请稍后重试');
+      } else if (response.status === 404) {
+        throw new Error('请求的资源不存在');
+      } else if (response.status === 401) {
+        throw new Error('未授权访问，请重新登录');
+      } else if (response.status === 403) {
+        throw new Error('没有访问权限');
+      }
+      
+      throw new Error(data?.error || data?.message || '请求失败，请稍后重试');
     }
 
     // For our new API endpoints that directly return the data without wrapping
@@ -84,16 +135,26 @@ export async function fetchApi<T>(
       data: data.data || data || ({} as T),
       status: response.status,
       message: data.message || '请求成功',
-      success: true,
+      success: data.success !== false,
     };
   } catch (error) {
-    console.error('API Error:', error);
-    return {
-      data: {} as T,
-      status: 500,
-      message: error instanceof Error ? error.message : '请求出错',
-      success: false,
-    };
+    console.error('API请求错误:', {
+      endpoint,
+      error: error instanceof Error ? error.message : '未知错误'
+    });
+    
+    // 处理网络错误
+    if (error instanceof Error) {
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('无法连接到服务器，请检查网络连接');
+      } else if (error.message.includes('ECONNRESET')) {
+        throw new Error('网络连接被重置，请检查网络连接并重试');
+      } else if (error.message.includes('ETIMEDOUT')) {
+        throw new Error('网络连接超时，请检查网络连接并重试');
+      }
+    }
+    
+    throw error;
   }
 }
 

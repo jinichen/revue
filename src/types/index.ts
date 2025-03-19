@@ -93,17 +93,15 @@ export interface OrgUsageData {
 }
 
 /**
- * Billing configuration type
+ * 账单配置接口
  */
 export interface BillingConfig {
-  orgId: string;
+  orgId?: string;
+  orgName?: string;
   periodStart: string;
   periodEnd: string;
-  includeDetails?: boolean;
-  includeCharts?: boolean;
-  twoFactorPrice: number;  // 二要素认证单价（分/次）
-  threeFactorPrice: number; // 三要素认证单价（分/次）
-  format?: 'excel' | 'markdown'; // 导出格式
+  twoFactorPrice: number;
+  threeFactorPrice: number;
 }
 
 /**

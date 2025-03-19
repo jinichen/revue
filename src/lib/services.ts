@@ -15,21 +15,28 @@ import {
  */
 export const getOrganizations = async (): Promise<Organization[]> => {
   try {
+    console.log('开始获取组织列表');
     const response = await fetchApi<{
       success: boolean;
       message: string;
       data: Organization[];
     }>('/api/organizations');
     
-    if (response.success && Array.isArray(response.data)) {
-      return response.data;
+    console.log('组织列表API响应:', response);
+    
+    if (!response.success) {
+      throw new Error(response.message || '获取组织列表失败');
     }
     
-    console.error('获取组织列表失败:', response);
-    return [];
+    if (!Array.isArray(response.data)) {
+      console.error('组织列表数据格式错误:', response.data);
+      throw new Error('组织列表数据格式错误');
+    }
+    
+    return response.data;
   } catch (error) {
     console.error('获取组织列表异常:', error);
-    return [];
+    throw error;
   }
 };
 

@@ -7,7 +7,6 @@
 import { useState, useEffect } from 'react';
 import { format, subDays } from 'date-fns';
 import ReconciliationForm from '@/components/reconciliation/ReconciliationForm';
-import ReconciliationPreview from '@/components/reconciliation/ReconciliationPreview';
 import { BillingConfig } from '@/types';
 
 export default function ReconciliationPage() {
@@ -53,22 +52,13 @@ export default function ReconciliationPage() {
   };
   
   return (
-    <div className="space-y-3 p-3">
-      {/* 两栏布局：左侧对账单选项，右侧对账单预览 */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-        {/* 左侧：对账单选项 */}
-        <div className="md:col-span-3">
+    <div className="space-y-6 p-3">
+      <div className="flex flex-col gap-6">
+        {/* 对账单表单 */}
+        <div>
           <ReconciliationForm 
             initialConfig={config} 
             onConfigChange={handleConfigChange}
-          />
-        </div>
-        
-        {/* 右侧：对账单预览 */}
-        <div className="md:col-span-9">
-          <ReconciliationPreview 
-            billingConfig={config} 
-            isLoading={isLoading} 
           />
         </div>
       </div>

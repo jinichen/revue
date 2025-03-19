@@ -2,13 +2,54 @@
  * Reconciliation service for data retrieval and export
  */
 
-import { post } from '@/lib/api';
+import { fetchApi } from '@/lib/api';
 import { BillingConfig } from '@/types';
 
 // 获取每页显示的记录数，默认为20
 const DEFAULT_PAGE_SIZE = typeof window !== 'undefined' 
   ? parseInt(process.env.NEXT_PUBLIC_RECONCILIATION_PAGE_SIZE || '20', 10) 
   : 20;
+
+// 对账单数据类型
+export interface ReconciliationData {
+  items: Array<{
+    org_name: string;
+    auth_mode: string;
+    exec_start_time: string;
+    result_code: string;
+    result_msg: string;
+    count: number;
+  }>;
+  totalCount: number;
+  summary: Array<{
+    auth_mode: string;
+    total: number;
+    success: number;
+    fail: number;
+    details: Array<{
+      result_code: string;
+      result_msg: string;
+      count: number;
+    }>;
+  }>;
+  page: number;
+  pageSize: number;
+}
+
+export interface ReconciliationResponse {
+  success: boolean;
+  message: string;
+  data?: ReconciliationData;
+}
+
+export interface ExportResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    url: string;
+    fileName: string;
+  };
+}
 
 /**
  * 获取对账单数据
@@ -21,37 +62,15 @@ export async function getReconciliation(
   config: BillingConfig, 
   page: number = 1, 
   pageSize: number = DEFAULT_PAGE_SIZE
-) {
-  type ReconciliationResponse = {
-    success: boolean;
-    message: string;
-    data: {
-      orgId: string;
-      orgName: string;
-      periodStart: string;
-      periodEnd: string;
-      items: Array<{
-        org_name: string;
-        auth_mode: string;
-        exec_start_time: string;
-        result_code: string;
-        result_msg: string;
-        count: number;
-      }>;
-      totalCount: number;
-      totalPages: number;
-      currentPage: number;
-      pageSize: number;
-    }
-  };
-
-  const response = await post<ReconciliationResponse>('/api/reconciliation', {
-    config,
-    page,
-    pageSize
+): Promise<ReconciliationResponse> {
+  return fetchApi('/api/billing/reconciliation', {
+    method: 'POST',
+    body: JSON.stringify({
+      config,
+      page,
+      pageSize
+    })
   });
-  
-  return response.data.data;
 }
 
 /**
@@ -59,16 +78,11 @@ export async function getReconciliation(
  * @param config Billing configuration with organization and time period
  * @returns Promise with file URL and name
  */
-export async function exportReconciliation(config: BillingConfig) {
-  type ExportResponse = {
-    success: boolean;
-    message: string;
-    data: {
-      url: string;
-      fileName: string;
-    }
-  };
-
-  const response = await post<ExportResponse>('/api/reconciliation/export', config);
-  return response.data.data;
+export async function exportReconciliation(
+  config: BillingConfig & { format?: 'markdown' | 'excel' }
+): Promise<ExportResponse> {
+  return fetchApi('/api/billing/reconciliation/export', {
+    method: 'POST',
+    body: JSON.stringify(config)
+  });
 } 
