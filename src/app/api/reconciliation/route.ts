@@ -165,8 +165,8 @@ export async function POST(req: NextRequest) {
       
       const orgName = orgResult[0]?.org_name || '';
       
-      // 修改查询SQL，确保SELECT和GROUP BY的表达式一致
-      // 使用DATE函数处理日期，确保SELECT和GROUP BY的表达式完全一致
+      // 修改查询SQL，确保SELECT、GROUP BY和ORDER BY的表达式一致
+      // 使用DATE函数处理日期，确保表达式完全一致
       const querySQL = `
         SELECT 
           org.${COLUMN_MAPPINGS.org_name} as org_name,
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
           DATE(sl.${COLUMN_MAPPINGS.exec_start_time}), sl.${COLUMN_MAPPINGS.result_code}, 
           sl.${COLUMN_MAPPINGS.result_msg}
         ORDER BY 
-          sl.${COLUMN_MAPPINGS.exec_start_time} DESC
+          DATE(sl.${COLUMN_MAPPINGS.exec_start_time}) DESC
         LIMIT ? OFFSET ?
       `;
       

@@ -49,6 +49,7 @@ async function generateReconciliationData(customerName: string, startDate: strin
     console.log(`生成 ${customerName} 从 ${startDate} 到 ${endDate} 的对账单数据`);
     
     // 查询服务日志，按日期、认证模式、返回码分组
+    // 确保ORDER BY与GROUP BY中的表达式一致
     const reconciliationQuery = `
       SELECT 
         oi.org_name,

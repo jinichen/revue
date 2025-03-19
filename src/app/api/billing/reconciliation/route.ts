@@ -120,8 +120,8 @@ const generateReconciliationData = async (config: BillingConfig, page: number = 
     // 计算偏移量
     const offset = (page - 1) * pageSize;
     
-    // 修改查询SQL，确保SELECT和GROUP BY的表达式一致
-    // 使用DATE函数处理日期
+    // 修改查询SQL，确保SELECT、GROUP BY和ORDER BY的表达式一致
+    // 使用DATE函数处理日期，确保所有引用相同列的表达式都一致
     const reconciliationQuery = `
       SELECT 
         oi.org_name,
