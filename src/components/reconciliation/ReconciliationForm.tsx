@@ -151,16 +151,64 @@ export default function ReconciliationForm({ initialConfig, onConfigChange }: Re
   // 获取Markdown内容
   const fetchMarkdownContent = async (url: string) => {
     setLoadingMarkdown(true);
+    console.log('开始获取Markdown内容，URL:', url);
+    
     try {
-      const response = await fetch(url);
+      // 添加请求超时和headers
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/plain, text/markdown',
+          'Cache-Control': 'no-cache'
+        },
+        signal: controller.signal
+      });
+      
+      // 清除超时计时器
+      clearTimeout(timeoutId);
+      
+      console.log('Markdown内容响应状态:', response.status, response.statusText);
+      
       if (!response.ok) {
-        throw new Error('获取Markdown内容失败');
+        // 尝试获取错误详情
+        try {
+          const errorText = await response.text();
+          console.error('获取Markdown失败，服务器响应:', errorText);
+        } catch (readError) {
+          console.error('无法读取错误响应:', readError);
+        }
+        
+        throw new Error(`获取Markdown内容失败: 状态码 ${response.status}`);
       }
+      
       const content = await response.text();
+      console.log('成功获取Markdown内容，长度:', content.length);
+      
+      if (!content || content.trim().length === 0) {
+        console.warn('获取到的Markdown内容为空');
+        setError('获取到的对账单内容为空');
+        setMarkdownContent('*没有找到对账单内容*');
+        return;
+      }
+      
       setMarkdownContent(content);
     } catch (err) {
       console.error('获取Markdown内容失败:', err);
-      setError(err instanceof Error ? err.message : '获取Markdown内容失败');
+      
+      // 针对不同错误类型提供更具体的错误信息
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('获取Markdown内容超时，请稍后重试');
+      } else if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+        setError('网络连接问题，无法获取对账单内容');
+      } else {
+        setError(err instanceof Error ? `获取对账单内容失败: ${err.message}` : '获取Markdown内容失败');
+      }
+      
+      // 设置一个占位内容
+      setMarkdownContent('*获取对账单内容失败，请重试*');
     } finally {
       setLoadingMarkdown(false);
     }
@@ -235,13 +283,13 @@ export default function ReconciliationForm({ initialConfig, onConfigChange }: Re
       <div className="flex flex-col md:flex-row gap-6">
         {/* 左侧选项面板 */}
         <div className="w-full md:w-64">
-          <div className="bg-card rounded-lg border p-4 shadow-sm">
+          <div className="bg-card rounded-lg border p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
         {/* 客户选择 */}
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">客户名</label>
+                <label className="text-sm font-medium dark:text-gray-200">客户名</label>
           <select
-                  className="w-full p-2 border rounded-md bg-background text-sm"
+                  className="w-full p-2 border rounded-md bg-background text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
             value={formState.orgId}
             onChange={(e) => handleChange('orgId', e.target.value)}
             disabled={loadingOrgs || loading}
@@ -254,7 +302,7 @@ export default function ReconciliationForm({ initialConfig, onConfigChange }: Re
             ))}
           </select>
           {loadingOrgs && (
-            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <div className="text-xs text-muted-foreground flex items-center gap-1 dark:text-gray-400">
               <Loader2 className="h-3 w-3 animate-spin" />
               加载客户...
             </div>
@@ -263,10 +311,10 @@ export default function ReconciliationForm({ initialConfig, onConfigChange }: Re
         
               {/* 日期选择 */}
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">对账日期</label>
+                <label className="text-sm font-medium dark:text-gray-200">对账日期</label>
           <input
             type="date"
-                  className="w-full p-2 border rounded-md bg-background text-sm"
+                  className="w-full p-2 border rounded-md bg-background text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
             value={formState.periodStart}
             onChange={(e) => handleChange('periodStart', e.target.value)}
             disabled={loading}
@@ -276,21 +324,21 @@ export default function ReconciliationForm({ initialConfig, onConfigChange }: Re
 
             {/* 错误提示 - 仅在没有下载链接时显示 */}
             {error && !downloadUrl && (
-              <div className="mt-4 p-2 bg-red-50 border border-red-200 text-red-700 rounded-md text-xs">
+              <div className="mt-4 p-2 bg-red-50 border border-red-200 text-red-700 rounded-md text-xs dark:bg-red-900/30 dark:border-red-800 dark:text-red-400">
                 {error}
               </div>
             )}
             
             {/* 下载链接 */}
             {downloadUrl && fileName && (
-              <div className="mt-4 p-2 bg-green-50 border border-green-200 text-green-700 rounded-md text-xs">
+              <div className="mt-4 p-2 bg-green-50 border border-green-200 text-green-700 rounded-md text-xs dark:bg-green-900/30 dark:border-green-800 dark:text-green-400">
                 对账单已生成: <a href={downloadUrl} download={fileName} className="underline">点击此处下载</a>
               </div>
             )}
             
             {/* 数据加载指示器 */}
             {loading && (
-              <div className="mt-4 text-xs text-muted-foreground flex items-center gap-1">
+              <div className="mt-4 text-xs text-muted-foreground flex items-center gap-1 dark:text-gray-400">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 加载对账单数据...
               </div>
@@ -300,18 +348,18 @@ export default function ReconciliationForm({ initialConfig, onConfigChange }: Re
         
         {/* 右侧预览区域 */}
         <div className="flex-1">
-          <div className="bg-card rounded-lg border p-4 shadow-sm">
-            <h3 className="text-lg font-medium mb-4">对账单预览</h3>
+          <div className="bg-card rounded-lg border p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <h3 className="text-lg font-medium mb-4 dark:text-gray-200">对账单预览</h3>
             
             {loadingMarkdown && (
-              <div className="flex items-center justify-center p-8">
+              <div className="flex items-center justify-center p-8 dark:text-gray-300">
                 <Loader2 className="h-6 w-6 animate-spin mr-2" />
                 <span>加载预览内容...</span>
               </div>
             )}
             
             {!markdownContent && !loadingMarkdown && (
-              <div className="text-center p-8 text-gray-500">
+              <div className="text-center p-8 text-gray-500 dark:text-gray-400">
                 {downloadUrl 
                   ? "正在加载预览内容..." 
                   : "生成对账单后将在此处显示预览"}
@@ -319,8 +367,8 @@ export default function ReconciliationForm({ initialConfig, onConfigChange }: Re
             )}
             
             {markdownContent && (
-              <div className="markdown-preview border rounded-md p-4 bg-white overflow-auto max-h-[600px]">
-                <div className="markdown-content prose prose-sm max-w-none">
+              <div className="markdown-preview border rounded-md p-4 bg-white overflow-auto max-h-[600px] dark:bg-gray-700 dark:border-gray-600">
+                <div className="markdown-content prose prose-sm max-w-none dark:prose-invert prose-headings:text-blue-200 prose-th:text-blue-100 prose-td:text-slate-200 prose-strong:text-white">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {markdownContent}
                   </ReactMarkdown>

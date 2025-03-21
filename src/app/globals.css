@@ -187,3 +187,101 @@
   margin-top: 0.5em;
   margin-bottom: 0.5em;
 }
+
+/* 为Markdown内容添加全局样式覆盖 */
+.markdown-content {
+  color: #f8fafc !important; /* slate-50 */
+}
+
+.markdown-content h1, 
+.markdown-content h2, 
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  color: #93c5fd !important; /* blue-200 */
+  margin-bottom: 0.75rem !important;
+  font-weight: 600 !important;
+}
+
+.markdown-content p {
+  color: #f1f5f9 !important; /* slate-100 */
+  margin-bottom: 1rem !important;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  color: #e2e8f0 !important; /* slate-200 */
+  padding-left: 1.5rem !important;
+}
+
+.markdown-content table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  margin: 1rem 0 !important;
+  border-radius: 0.375rem !important;
+  overflow: hidden !important;
+}
+
+.markdown-content table th {
+  color: #bfdbfe !important; /* blue-100 */
+  background-color: #1e3a8a !important; /* blue-900 */
+  font-weight: 500 !important;
+  text-align: left !important;
+  padding: 0.75rem 1rem !important;
+  border-bottom: 1px solid #334155 !important; /* slate-700 */
+}
+
+.markdown-content table td {
+  color: #e2e8f0 !important; /* slate-200 */
+  padding: 0.75rem 1rem !important;
+  border-bottom: 1px solid #334155 !important; /* slate-700 */
+  background-color: #1e293b !important; /* slate-800 */
+}
+
+.markdown-content table tr:last-child td {
+  border-bottom: none !important;
+}
+
+.markdown-content table tr:nth-child(even) td {
+  background-color: #0f172a !important; /* slate-900 */
+}
+
+.markdown-content a {
+  color: #60a5fa !important; /* blue-400 */
+  text-decoration: none !important;
+}
+
+.markdown-content a:hover {
+  text-decoration: underline !important;
+}
+
+.markdown-content pre,
+.markdown-content code {
+  background-color: #1e293b !important; /* slate-800 */
+  color: #e2e8f0 !important; /* slate-200 */
+  border-radius: 0.25rem !important;
+  padding: 0.25rem 0.5rem !important;
+}
+
+.markdown-content pre {
+  padding: 1rem !important;
+  overflow-x: auto !important;
+}
+
+.markdown-content blockquote {
+  border-left: 4px solid #3b82f6 !important; /* blue-500 */
+  padding-left: 1rem !important;
+  margin-left: 0 !important;
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+/* 特别处理认证编码和详细记录部分 */
+.markdown-content h3 {
+  font-size: 1.25rem !important;
+  color: #93c5fd !important; /* blue-200 */
+  padding-bottom: 0.5rem !important;
+  border-bottom: 1px solid #334155 !important; /* slate-700 */
+  margin-top: 1.5rem !important;
+}

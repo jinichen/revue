@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import path from 'path';
 
-// 导出目录
-const EXPORT_DIR = path.join(process.cwd(), 'public', 'exports', 'reconciliation');
-
-// 简单的 MIME 类型映射
+// 常用文件类型的MIME映射
 const MIME_TYPES: Record<string, string> = {
   '.md': 'text/markdown',
   '.txt': 'text/plain',
+  '.pdf': 'application/pdf',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
   '.csv': 'text/csv',
   '.json': 'application/json',
-  '.pdf': 'application/pdf'
+  '.html': 'text/html',
 };
 
 export async function GET(
@@ -19,41 +20,67 @@ export async function GET(
   { params }: { params: { path: string[] } }
 ) {
   try {
-    // 等待路由参数
-    const pathSegments = await Promise.resolve(params.path);
-    const filePath = path.join(EXPORT_DIR, ...pathSegments);
+    // 验证参数
+    if (!params?.path || !Array.isArray(params.path) || params.path.length === 0) {
+      return NextResponse.json(
+        { error: 'Invalid path parameter' },
+        { status: 400 }
+      );
+    }
+
+    // 构建文件路径
+    const filePath = path.join(process.cwd(), 'public', 'downloads', 'reconciliation', ...params.path);
+    
+    // 安全检查 - 防止目录遍历攻击
+    const safeBasePath = path.resolve(path.join(process.cwd(), 'public', 'downloads', 'reconciliation'));
+    const resolvedPath = path.resolve(filePath);
+    
+    if (!resolvedPath.startsWith(safeBasePath)) {
+      console.error(`Security warning: Attempted path traversal to ${resolvedPath}`);
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      );
+    }
 
     // 检查文件是否存在
     try {
-      await fs.access(filePath);
-    } catch (error) {
-      console.error('文件不存在:', filePath);
-      return new NextResponse('文件不存在', { status: 404 });
+      const stat = fs.statSync(filePath);
+      if (!stat.isFile()) {
+        return NextResponse.json(
+          { error: 'Not a file' },
+          { status: 404 }
+        );
+      }
+    } catch (err) {
+      return NextResponse.json(
+        { error: 'File not found' },
+        { status: 404 }
+      );
     }
 
     // 读取文件
-    const file = await fs.readFile(filePath);
+    const fileContent = fs.readFileSync(filePath);
     
-    // 获取文件类型
+    // 确定内容类型
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
     
-    // 对文件名进行编码
-    const fileName = encodeURIComponent(path.basename(filePath));
+    // 获取文件名
+    const fileName = path.basename(filePath);
     
-    // 设置响应头
-    const headers = new Headers();
-    headers.set('Content-Type', contentType);
-    headers.set('Content-Disposition', `attachment; filename*=UTF-8''${fileName}`);
-
-    return new NextResponse(file, {
-      status: 200,
-      headers
+    // 返回文件响应
+    return new NextResponse(fileContent, {
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+      },
     });
+    
   } catch (error) {
-    console.error('下载文件失败:', error);
-    return new NextResponse(
-      error instanceof Error ? error.message : '下载文件失败',
+    console.error('Error serving file:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

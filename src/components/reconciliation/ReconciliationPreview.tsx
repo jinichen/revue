@@ -316,10 +316,10 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
 
   if (loading) {
     return (
-      <div className="bg-card rounded-lg border shadow-sm p-6 min-h-[400px] flex items-center justify-center">
+      <div className="bg-card rounded-lg border shadow-sm p-6 min-h-[400px] flex items-center justify-center dark:border-gray-700 dark:bg-gray-800">
         <div className="flex flex-col items-center">
-          <div className="animate-spin h-6 w-6 border-2 border-gray-500 rounded-full border-t-transparent mb-1"></div>
-          <p className="text-gray-500 text-sm">加载对账单数据...</p>
+          <div className="animate-spin h-6 w-6 border-2 border-gray-500 rounded-full border-t-transparent mb-1 dark:border-gray-400 dark:border-t-transparent"></div>
+          <p className="text-gray-500 text-sm dark:text-gray-400">加载对账单数据...</p>
         </div>
       </div>
     );
@@ -327,7 +327,7 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
 
   if (error && !hideError) {
     return (
-      <div className="bg-card rounded-lg border shadow-sm p-6 text-center text-red-500">
+      <div className="bg-card rounded-lg border shadow-sm p-6 text-center text-red-500 dark:border-gray-700 dark:bg-gray-800 dark:text-red-400">
         <div className="my-4">{error}</div>
       </div>
     );
@@ -340,7 +340,7 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
 
   return (
     <div className="space-y-4">
-    <div className="bg-card rounded-lg border shadow-sm p-4">
+    <div className="bg-card rounded-lg border shadow-sm p-4 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex justify-between items-center mb-4">
         <div className="font-medium">
           {data?.orgName || billingConfig.orgId} {formatChineseDate(billingConfig.periodStart)}对账单
@@ -348,7 +348,7 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
         <div className="flex items-center gap-2">
           <button 
             onClick={toggleFormat}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200"
             title={displayFormat === 'table' ? '切换到Markdown格式' : '切换到表格格式'}
           >
             {displayFormat === 'table' ? (
@@ -367,7 +367,7 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
             <>
               <button
                 onClick={copyMarkdownToClipboard}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200"
                 title="复制Markdown"
               >
                 <Copy size={16} />
@@ -375,7 +375,7 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
               </button>
               <button
                 onClick={downloadMarkdownFile}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200"
                 title="下载Markdown文件"
               >
                 <Download size={16} />
@@ -385,10 +385,10 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
           )}
         </div>
       </div>
-      <div className="text-sm mb-4 text-gray-500">
+      <div className="text-sm mb-4 text-gray-500 dark:text-gray-400">
         账单周期: {formatDate(billingConfig.periodStart)} - {formatDate(billingConfig.periodEnd)}
         {RECONCILIATION_SOURCE_TYPE === 'file' && (
-          <span className="ml-2 text-blue-500">(使用预生成文件)</span>
+          <span className="ml-2 text-blue-500 dark:text-blue-400">(使用预生成文件)</span>
         )}
       </div>
 
@@ -396,14 +396,14 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b">
-                <th className="py-2 px-3 text-left font-medium">客户名</th>
-                <th className="py-2 px-3 text-left font-medium">模式</th>
-                <th className="py-2 px-3 text-left font-medium">日期</th>
-                <th className="py-2 px-3 text-left font-medium">返回码</th>
-                <th className="py-2 px-3 text-left font-medium">返回信息</th>
-                  <th className="py-2 px-3 text-left font-medium">是否有效</th>
-                <th className="py-2 px-3 text-right font-medium">统计</th>
+              <tr className="border-b dark:border-gray-700">
+                <th className="py-2 px-3 text-left font-medium dark:text-gray-200">客户名</th>
+                <th className="py-2 px-3 text-left font-medium dark:text-gray-200">模式</th>
+                <th className="py-2 px-3 text-left font-medium dark:text-gray-200">日期</th>
+                <th className="py-2 px-3 text-left font-medium dark:text-gray-200">返回码</th>
+                <th className="py-2 px-3 text-left font-medium dark:text-gray-200">返回信息</th>
+                <th className="py-2 px-3 text-left font-medium dark:text-gray-200">是否有效</th>
+                <th className="py-2 px-3 text-right font-medium dark:text-gray-200">统计</th>
               </tr>
             </thead>
             <tbody>
@@ -413,22 +413,22 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
                   const isValid = validResultCodes.includes(item.result_code);
                   
                   return (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="py-2 px-3">{item.org_name || '-'}</td>
-                  <td className="py-2 px-3">{item.auth_mode}</td>
-                  <td className="py-2 px-3">{formatDate(item.exec_start_time)}</td>
-                  <td className="py-2 px-3">{item.result_code}</td>
-                  <td className="py-2 px-3">{item.result_msg}</td>
-                    <td className="py-2 px-3">{isValid ? '是' : '否'}</td>
-                  <td className="py-2 px-3 text-right">{item.count}</td>
+                <tr key={index} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="py-2 px-3 dark:text-gray-100">{item.org_name || '-'}</td>
+                  <td className="py-2 px-3 dark:text-gray-100">{item.auth_mode}</td>
+                  <td className="py-2 px-3 dark:text-gray-100">{formatDate(item.exec_start_time)}</td>
+                  <td className="py-2 px-3 dark:text-gray-100">{item.result_code}</td>
+                  <td className="py-2 px-3 dark:text-gray-100">{item.result_msg}</td>
+                  <td className="py-2 px-3 dark:text-gray-100">{isValid ? '是' : '否'}</td>
+                  <td className="py-2 px-3 text-right dark:text-gray-100">{item.count}</td>
                 </tr>
                 );})}
             </tbody>
           </table>
         </div>
       ) : (
-        <div className="bg-gray-50 p-4 rounded-md overflow-auto">
-          <pre className="text-sm whitespace-pre-wrap font-mono">
+        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md overflow-auto">
+          <pre className="text-sm whitespace-pre-wrap font-mono dark:text-gray-100">
             {RECONCILIATION_SOURCE_TYPE === 'file' ? markdownContent : generateMarkdown(data)}
           </pre>
         </div>
@@ -437,7 +437,7 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
       {/* 分页控件 - 仅在使用API生成方式且有多页数据时显示 */}
       {RECONCILIATION_SOURCE_TYPE === 'generate' && data?.totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 dark:text-gray-300">
             显示 {data.items.length} 条，共 {data.totalCount} 条
             (第 {data.currentPage} 页，共 {data.totalPages} 页)
           </div>
@@ -445,8 +445,8 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
             <button
               className={`px-3 py-1 text-sm rounded border ${
                 currentPage <= 1 
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : 'bg-white hover:bg-gray-50'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500' 
+                  : 'bg-white hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200'
               }`}
               onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
               disabled={currentPage <= 1}
@@ -465,8 +465,8 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
                     key={page}
                     className={`px-3 py-1 text-sm rounded border ${
                       page === data.currentPage 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-white hover:bg-gray-50'
+                        ? 'bg-blue-500 text-white dark:bg-blue-600' 
+                        : 'bg-white hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200'
                     }`}
                     onClick={() => handlePageChange(page)}
                   >
@@ -481,8 +481,8 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
             <button
               className={`px-3 py-1 text-sm rounded border ${
                 currentPage >= data.totalPages 
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : 'bg-white hover:bg-gray-50'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500' 
+                  : 'bg-white hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200'
               }`}
               onClick={() => currentPage < data.totalPages && handlePageChange(currentPage + 1)}
               disabled={currentPage >= data.totalPages}
@@ -493,7 +493,7 @@ const ReconciliationPreview: React.FC<ReconciliationPreviewProps> = ({ billingCo
         </div>
       )}
 
-      <div className="mt-4 text-sm text-gray-500">
+      <div className="mt-4 text-sm text-gray-500 dark:text-gray-300">
         总计: {data?.totalCount || 0} 次认证
         </div>
       </div>

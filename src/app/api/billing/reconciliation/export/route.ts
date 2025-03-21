@@ -10,6 +10,7 @@ import fs from 'fs/promises';
 
 // 从环境变量获取导出目录
 const EXPORT_DIR = path.join(process.cwd(), 'public', 'exports', 'reconciliation');
+const DOWNLOAD_PATH = '/exports/reconciliation/';
 
 // 确保导出目录存在
 try {
@@ -212,7 +213,7 @@ export async function POST(req: NextRequest) {
       success: true,
       message: '对账单生成成功',
       data: {
-        url: `/downloads/reconciliation/${fileName}`,
+        url: `${DOWNLOAD_PATH}${fileName}`,
         fileName
       }
     });

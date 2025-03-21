@@ -164,10 +164,10 @@ export default function BillPreview({ config }: BillPreviewProps) {
   
   if (loading) {
     return (
-      <div className="bg-card rounded-lg border shadow-sm p-3 h-[400px] flex items-center justify-center">
+      <div className="bg-card rounded-lg border shadow-sm p-6 min-h-[400px] flex items-center justify-center dark:bg-gray-800 dark:border-gray-700">
         <div className="flex flex-col items-center">
-          <Loader2 className="h-6 w-6 text-muted-foreground animate-spin mb-1" />
-          <p className="text-muted-foreground text-sm">加载预览...</p>
+          <Loader2 className="h-6 w-6 text-muted-foreground animate-spin mb-1 dark:text-gray-400" />
+          <p className="text-muted-foreground text-sm dark:text-gray-400">加载预览...</p>
         </div>
       </div>
     );
@@ -175,10 +175,10 @@ export default function BillPreview({ config }: BillPreviewProps) {
   
   if (error) {
     return (
-      <div className="bg-card rounded-lg border shadow-sm p-3">
+      <div className="bg-card rounded-lg border shadow-sm p-6 dark:bg-gray-800 dark:border-gray-700">
         <div className="text-center py-4">
-          <div className="text-red-500 mb-1 text-sm">获取预览失败</div>
-          <p className="text-muted-foreground text-xs">{error}</p>
+          <div className="text-red-500 mb-1 text-sm dark:text-red-400">获取预览失败</div>
+          <p className="text-muted-foreground text-xs dark:text-gray-400">{error}</p>
         </div>
       </div>
     );
@@ -186,10 +186,10 @@ export default function BillPreview({ config }: BillPreviewProps) {
   
   if (!config.orgId) {
     return (
-      <div className="bg-card rounded-lg border shadow-sm p-3">
+      <div className="bg-card rounded-lg border shadow-sm p-6 min-h-[400px] flex items-center justify-center dark:bg-gray-800 dark:border-gray-700">
         <div className="text-center py-4">
-          <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-muted-foreground text-sm">请选择客户生成账单预览</p>
+          <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2 dark:text-gray-400" />
+          <p className="text-muted-foreground text-sm dark:text-gray-400">请选择客户生成账单预览</p>
         </div>
       </div>
     );
@@ -197,24 +197,24 @@ export default function BillPreview({ config }: BillPreviewProps) {
   
   if (!previewData) {
     return (
-      <div className="bg-card rounded-lg border shadow-sm p-3">
+      <div className="bg-card rounded-lg border shadow-sm p-3 dark:bg-gray-800 dark:border-gray-700">
         <div className="text-center py-4">
-          <div className="text-amber-500 mb-1 text-sm">无账单数据</div>
-          <p className="text-muted-foreground text-xs">所选时间段内没有查询到账单数据</p>
+          <div className="text-amber-500 mb-1 text-sm dark:text-amber-400">无账单数据</div>
+          <p className="text-muted-foreground text-xs dark:text-gray-400">所选时间段内没有查询到账单数据</p>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="bg-card rounded-lg border shadow-sm">
+    <div className="bg-card rounded-lg border shadow-sm dark:bg-gray-800 dark:border-gray-700">
       <div className="p-2 overflow-auto">
         {/* 账单标题和下载按钮 */}
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-base font-medium">账单明细</h3>
+          <h3 className="text-base font-medium dark:text-gray-200">账单明细</h3>
           <button
             onClick={downloadMarkdownFile}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm rounded border bg-white hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200"
             title="下载Markdown格式账单"
           >
             <Download size={16} />
@@ -223,105 +223,105 @@ export default function BillPreview({ config }: BillPreviewProps) {
         </div>
         
         {/* 账单内容表格 */}
-        <table className="w-full border-collapse border text-sm">
+        <table className="w-full border-collapse border text-sm dark:border-gray-700">
           <tbody>
             <tr>
-              <td colSpan={4} className="border p-1 text-xs">
+              <td colSpan={4} className="border p-1 text-xs dark:border-gray-700 dark:text-gray-300">
                 {previewData.periodStart.substring(0, 10)}-{previewData.periodEnd.substring(0, 10)}
               </td>
-              <td className="border p-1"></td>
-              <td className="border p-1"></td>
+              <td className="border p-1 dark:border-gray-700"></td>
+              <td className="border p-1 dark:border-gray-700"></td>
             </tr>
             <tr>
-              <td className="border p-1 text-xs">客户名</td>
-              <td colSpan={3} className="border p-1 text-xs">{previewData.orgName}</td>
-              <td className="border p-1"></td>
-              <td className="border p-1"></td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">客户名</td>
+              <td colSpan={3} className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">{previewData.orgName}</td>
+              <td className="border p-1 dark:border-gray-700"></td>
+              <td className="border p-1 dark:border-gray-700"></td>
             </tr>
             
             {/* 表头 */}
-            <tr className="bg-gray-100">
-              <td className="border p-1 text-xs"></td>
-              <td className="border p-1 text-xs">模式</td>
-              <td className="border p-1 text-xs">返回码</td>
-              <td className="border p-1 text-xs">返回信息</td>
-              <td className="border p-1 text-xs">统计</td>
-              <td className="border p-1 text-xs">有效认证</td>
+            <tr className="bg-gray-100 dark:bg-gray-700">
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100"></td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">模式</td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">返回码</td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">返回信息</td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">统计</td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">有效认证</td>
             </tr>
             
             {/* 二要素数据 - 先显示成功返回码0的记录，然后是其他返回码 */}
             {previewData.twoFactorItems.map((item, index) => (
               <tr key={`two-${index}`}>
-                <td className="border p-1 text-xs"></td>
-                <td className="border p-1 text-xs">{item.mode}</td>
-                <td className="border p-1 text-xs">{item.result_code}</td>
-                <td className="border p-1 text-xs">{item.result_msg}</td>
-                <td className="border p-1 text-right">{item.count.toLocaleString()}</td>
-                <td className="border p-1 text-right">{item.valid_count?.toLocaleString() || ''}</td>
+                <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100"></td>
+                <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">{item.mode}</td>
+                <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">{item.result_code}</td>
+                <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">{item.result_msg}</td>
+                <td className="border p-1 text-right dark:border-gray-700 dark:text-gray-100">{item.count.toLocaleString()}</td>
+                <td className="border p-1 text-right dark:border-gray-700 dark:text-gray-100">{item.valid_count?.toLocaleString() || ''}</td>
               </tr>
             ))}
             
             {/* 二要素合计 */}
             <tr>
-              <td className="border p-1 text-xs">二要素有效合计</td>
-              <td colSpan={3} className="border p-1 text-xs"></td>
-              <td className="border p-1"></td>
-              <td className="border p-1 text-right font-bold">{previewData.twoFactorValidTotal.toLocaleString()}</td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">二要素有效合计</td>
+              <td colSpan={3} className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100"></td>
+              <td className="border p-1 dark:border-gray-700"></td>
+              <td className="border p-1 text-right font-bold dark:border-gray-700 dark:text-gray-100">{previewData.twoFactorValidTotal.toLocaleString()}</td>
             </tr>
             
             {/* 二要素单价 */}
             <tr>
-              <td className="border p-1 text-xs">单价</td>
-              <td colSpan={3} className="border p-1 text-xs"></td>
-              <td colSpan={2} className="border p-1 text-right">{previewData.twoFactorPrice.toFixed(3)}</td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">单价</td>
+              <td colSpan={3} className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100"></td>
+              <td colSpan={2} className="border p-1 text-right dark:border-gray-700 dark:text-gray-100">{previewData.twoFactorPrice.toFixed(3)}</td>
             </tr>
             
             {/* 二要素金额 */}
             <tr>
-              <td className="border p-1 text-xs">应结算额</td>
-              <td colSpan={3} className="border p-1 text-xs"></td>
-              <td colSpan={2} className="border p-1 text-right">{previewData.twoFactorAmount.toFixed(3)}</td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">应结算额</td>
+              <td colSpan={3} className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100"></td>
+              <td colSpan={2} className="border p-1 text-right dark:border-gray-700 dark:text-gray-100">{previewData.twoFactorAmount.toFixed(3)}</td>
             </tr>
             
             {/* 三要素数据 - 先显示成功返回码0的记录，然后是其他返回码 */}
             {previewData.threeFactorItems.map((item, index) => (
               <tr key={`three-${index}`}>
-                <td className="border p-1 text-xs"></td>
-                <td className="border p-1 text-xs">{item.mode}</td>
-                <td className="border p-1 text-xs">{item.result_code}</td>
-                <td className="border p-1 text-xs">{item.result_msg}</td>
-                <td className="border p-1 text-right">{item.count.toLocaleString()}</td>
-                <td className="border p-1 text-right">{item.valid_count?.toLocaleString() || ''}</td>
+                <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100"></td>
+                <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">{item.mode}</td>
+                <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">{item.result_code}</td>
+                <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">{item.result_msg}</td>
+                <td className="border p-1 text-right dark:border-gray-700 dark:text-gray-100">{item.count.toLocaleString()}</td>
+                <td className="border p-1 text-right dark:border-gray-700 dark:text-gray-100">{item.valid_count?.toLocaleString() || ''}</td>
               </tr>
             ))}
             
             {/* 三要素合计 */}
             <tr>
-              <td className="border p-1 text-xs">三要素有效合计</td>
-              <td colSpan={3} className="border p-1 text-xs"></td>
-              <td className="border p-1"></td>
-              <td className="border p-1 text-right font-bold">{previewData.threeFactorValidTotal.toLocaleString()}</td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">三要素有效合计</td>
+              <td colSpan={3} className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100"></td>
+              <td className="border p-1 dark:border-gray-700"></td>
+              <td className="border p-1 text-right font-bold dark:border-gray-700 dark:text-gray-100">{previewData.threeFactorValidTotal.toLocaleString()}</td>
             </tr>
             
             {/* 三要素单价 */}
             <tr>
-              <td className="border p-1 text-xs">单价</td>
-              <td colSpan={3} className="border p-1 text-xs"></td>
-              <td colSpan={2} className="border p-1 text-right">{previewData.threeFactorPrice.toFixed(3)}</td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">单价</td>
+              <td colSpan={3} className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100"></td>
+              <td colSpan={2} className="border p-1 text-right dark:border-gray-700 dark:text-gray-100">{previewData.threeFactorPrice.toFixed(3)}</td>
             </tr>
             
             {/* 三要素金额 */}
             <tr>
-              <td className="border p-1 text-xs">应结算额</td>
-              <td colSpan={3} className="border p-1 text-xs"></td>
-              <td colSpan={2} className="border p-1 text-right">{previewData.threeFactorAmount.toFixed(3)}</td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">应结算额</td>
+              <td colSpan={3} className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100"></td>
+              <td colSpan={2} className="border p-1 text-right dark:border-gray-700 dark:text-gray-100">{previewData.threeFactorAmount.toFixed(3)}</td>
             </tr>
             
             {/* 总计 */}
             <tr>
-              <td className="border p-1 text-xs">总计结算金额</td>
-              <td colSpan={3} className="border p-1 text-xs"></td>
-              <td colSpan={2} className="border p-1 text-right font-bold">{previewData.totalAmount.toFixed(3)}</td>
+              <td className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100">总计结算金额</td>
+              <td colSpan={3} className="border p-1 text-xs dark:border-gray-700 dark:text-gray-100"></td>
+              <td colSpan={2} className="border p-1 text-right font-bold dark:border-gray-700 dark:text-gray-100">{previewData.totalAmount.toFixed(3)}</td>
             </tr>
           </tbody>
         </table>

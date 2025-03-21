@@ -9,6 +9,7 @@ import {
   RevenueSummary,
   CallStatsByDate
 } from '@/types';
+import { format } from 'date-fns';
 
 /**
  * Fetches organizations
@@ -118,141 +119,73 @@ export const getRevenueData = async (
 };
 
 /**
- * Fetches call statistics by period
+ * 获取调用统计数据
+ * @param period 统计周期 (day/month/year)
+ * @param date 日期，格式为YYYY-MM-DD
+ * @param orgId 组织ID (可选)
  */
-export const getCallStats = async (
-  period: 'year' | 'month' | 'day',
-  date?: string,
-  orgId?: string
-): Promise<{
-  data: Array<{
-    date: string;
-    validCalls: number;
-    invalidCalls: number;
-  }>,
-  summary: {
-    total: number;
-    validTotal: number;
-    invalidTotal: number;
-    change: number;
-    changePercentage: number;
-  },
-  resultCodes: Array<{
-    result_code: string;
-    result_msg: string;
-    count: number;
-    percentage: number;
-  }>,
-  organization?: {
-    org_id: string;
-    org_name: string;
-  }
-}> => {
-  const queryParams = new URLSearchParams();
-  queryParams.append('period', period);
-  
-  if (date) {
-    queryParams.append('date', date);
-  }
-  
-  if (orgId) {
-    queryParams.append('org_id', orgId);
-  }
-  
-  const response = await fetchApi<{
-    data: Array<{
-      date: string;
-      validCalls: number;
-      invalidCalls: number;
-    }>,
-    summary: {
-      total: number;
-      validTotal: number;
-      invalidTotal: number;
-      change: number;
-      changePercentage: number;
-    },
-    resultCodes: Array<{
-      result_code: string;
-      result_msg: string;
-      count: number;
-      percentage: number;
-    }>,
-    organization?: {
-      org_id: string;
-      org_name: string;
-    }
-  }>(`/api/analytics/call-stats?${queryParams.toString()}`);
-  return response.data;
-};
-
-/**
- * Fetches statistics for all organizations
- */
-export const getOrgCallStats = async (
-  period: 'year' | 'month' | 'day',
-  date?: string
-): Promise<{
-  period: string;
-  startDate: string;
-  endDate: string;
-  data: Array<{
-    org_id: string;
-    org_name: string;
-    total_calls: number;
-    valid_calls: number;
-    invalid_calls: number;
-    avg_response_time_ms: number;
-    change: number;
-    changePercentage: number;
-    top_result_codes: Array<{
-      result_code: string;
-      result_msg: string;
-      count: number;
-    }>
-  }>
-}> => {
-  console.log('getOrgCallStats called with params:', { period, date });
-  
-  const queryParams = new URLSearchParams();
-  queryParams.append('period', period);
-  
-  if (date) {
-    queryParams.append('date', date);
-  }
-  
-  const apiUrl = `/api/analytics/org-stats?${queryParams.toString()}`;
-  console.log('Requesting organization stats from:', apiUrl);
+export async function getCallStats(
+  period: 'year' | 'month' | 'day' = 'day',
+  date: string = format(new Date(), 'yyyy-MM-dd')
+): Promise<ApiResponse<any>> {
+  console.log(`调用getCallStats API - 周期: ${period}, 日期: ${date}`);
   
   try {
-    const response = await fetchApi<{
-      period: string;
-      startDate: string;
-      endDate: string;
-      data: Array<{
-        org_id: string;
-        org_name: string;
-        total_calls: number;
-        valid_calls: number;
-        invalid_calls: number;
-        avg_response_time_ms: number;
-        change: number;
-        changePercentage: number;
-        top_result_codes: Array<{
-          result_code: string;
-          result_msg: string;
-          count: number;
-        }>
-      }>
-    }>(apiUrl);
+    const response = await fetch(`/api/analytics/call-stats?period=${period}&date=${date}`);
     
-    console.log('Organization stats API response:', response);
-    return response.data;
+    console.log(`getCallStats API响应状态: ${response.status} ${response.statusText}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`获取调用统计失败: ${response.status} ${response.statusText}\n${errorText}`);
+      throw new Error(`获取调用统计失败: ${response.status} ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    console.log(`getCallStats API返回数据:`, result);
+    
+    return result;
   } catch (error) {
-    console.error('Error fetching organization stats:', error);
+    console.error('getCallStats API错误:', error);
+    return {
+      success: false,
+      error: `${error}`
+    };
+  }
+}
+
+/**
+ * 获取组织调用统计数据
+ * @param period 统计周期 (day/month/year)
+ * @param date 日期，格式为YYYY-MM-DD
+ */
+export async function getOrgCallStats(
+  period: 'day' | 'month' | 'year',
+  date?: string
+) {
+  try {
+    // 默认使用当前日期
+    const currentDate = date || format(new Date(), 'yyyy-MM-dd');
+    
+    // 构建API请求URL
+    const url = new URL('/api/analytics/org-stats', window.location.origin);
+    url.searchParams.append('period', period);
+    url.searchParams.append('date', currentDate);
+    
+    // 发送请求
+    const response = await fetch(url.toString());
+    
+    if (!response.ok) {
+      throw new Error(`获取组织统计失败: ${response.status} ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result.data || [];
+  } catch (error) {
+    console.error('获取组织调用统计数据错误:', error);
     throw error;
   }
-};
+}
 
 /**
  * Fetches filter options for dropdowns

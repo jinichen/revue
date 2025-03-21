@@ -4,257 +4,206 @@
  * Provides call statistics grouped by organization for different time periods
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { query, queryCache } from '@/lib/db';
+import { query } from '@/lib/db';
+import { format, subDays, subMonths, subYears, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { VALID_RESULT_CODES, ORG_STATS_CACHE_TTL } from "@/lib/config";
+import { ApiResponse } from "@/lib/api";
 
+// 定义数据类型
 interface OrgStat {
   org_id: string;
-  org_name?: string;
+  org_name: string;
   total_calls: number;
-  valid_calls?: number;
-  invalid_calls?: number;
-  two_factor_calls?: number;
-  three_factor_calls?: number;
-  avg_response_time_ms?: number;
+  valid_calls: number;
+  invalid_calls: number;
+  two_factor_calls: number;
+  three_factor_calls: number;
+  avgResponseTime: number;
+}
+
+interface PrevOrgStat {
+  org_id: string;
+  total_calls: number;
 }
 
 interface ResultCode {
+  org_id: string;
   result_code: string;
   result_msg: string;
   count: number;
-  two_factor_count: number;
-  three_factor_count: number;
 }
 
+interface FormattedOrgStat {
+  org_id: string;
+  org_name: string;
+  total_calls: number;
+  valid_calls: number;
+  invalid_calls: number;
+  valid_percentage: number;
+  two_factor_calls: number;
+  three_factor_calls: number;
+  avgResponseTime: number;
+  change: number;
+  change_percentage: number;
+  result_codes: {
+    result_code: string;
+    result_msg: string;
+    count: number;
+  }[];
+}
+
+// 数据库查询结果类型
+interface DbOrgStat {
+  org_id: string;
+  org_name: string;
+  total_calls: number;
+  valid_calls: number;
+  invalid_calls: number;
+  avgResponseTime: number;
+}
+
+interface DbPrevStat {
+  org_id: string;
+  total_calls: number;
+}
+
+interface DbResultCode {
+  org_id: string;
+  result_code: string;
+  result_msg: string;
+  count: number;
+}
+
+// 带有变化信息的组织统计
+interface OrgStatWithChange extends DbOrgStat {
+  change: number;
+  change_percentage: number;
+}
+
+/**
+ * 获取组织调用统计API（GET）
+ * 
+ * - 支持按年、月、日级别汇总所有组织的调用数据
+ * - 包含各组织的总调用次数、有效调用次数、无效调用次数、二因素/三因素调用次数、平均响应时间
+ * - 支持与上一个周期的数据比较
+ */
 export async function GET(request: NextRequest) {
   try {
-    console.log('Org Stats API called with URL:', request.url);
-    
-    // Get query parameters
-    const searchParams = request.nextUrl.searchParams;
+    // 获取请求URL和参数
+    const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'day';
-    let date = searchParams.get('date');
+    const dateParam = searchParams.get('date') || format(new Date(), 'yyyy-MM-dd');
     
-    console.log('Org Stats API parameters:', { period, date });
+    // 添加数据刷新时间标记
+    const fetchTime = new Date().toISOString();
     
-    // If no date provided, use current date
-    if (!date) {
-      const now = new Date();
-      date = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    console.log(`组织统计API请求参数: period=${period}, date=${dateParam}`);
+    
+    // 解析日期
+    const date = new Date(dateParam);
+    if (isNaN(date.getTime())) {
+      return NextResponse.json(
+        { success: false, message: '无效的日期格式' },
+        { status: 400 }
+      );
     }
     
-    // 缓存时间（15分钟）
-    const CACHE_TTL = 15 * 60 * 1000;
-    
-    // 缓存键 - 基于请求参数
-    const cacheKey = `org-stats:${period}:${date}`;
-    
-    // 尝试从缓存获取
-    const cachedResult = queryCache.get(cacheKey, []);
-    if (cachedResult) {
-      console.log(`Returning cached result for ${cacheKey}`);
-      return NextResponse.json(cachedResult);
-    }
-    
-    // Set up date ranges based on period
-    let startDate, endDate;
-    const currentDate = new Date(date);
-    
-    if (period === 'year') {
-      // Get the year from the date
-      const year = currentDate.getFullYear();
-      startDate = `${year}-01-01`;
-      endDate = `${year}-12-31`;
-    } else if (period === 'month') {
-      // Get year and month from the date
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth() + 1;
-      const lastDay = new Date(year, month, 0).getDate(); // Last day of month
+    try {
+      // 有效结果码列表
+      const validCodesStr = VALID_RESULT_CODES.map(code => `'${code}'`).join(',');
       
-      startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
-      endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay}`;
-    } else {
-      // Default to day: just use the provided date
-      startDate = date;
-      endDate = date;
-    }
-    
-    console.log('Org Stats date range:', { startDate, endDate });
-    
-    // 有效认证返回码列表
-    const validResultCodes = ['0', '200004', '210001', '210002', '210004', '210005', '210006', '210009'];
-    const validResultCodesStr = validResultCodes.map(code => `'${code}'`).join(',');
-    
-    // Query for organization call statistics
-    const orgStats = await query(
-      `SELECT 
-        t_service_log.org_id,
-        t_org_info.org_name,
-        COUNT(*) as total_calls,
-        SUM(CASE WHEN result_code IN (${validResultCodesStr}) THEN 1 ELSE 0 END) as valid_calls,
-        SUM(CASE WHEN result_code NOT IN (${validResultCodesStr}) THEN 1 ELSE 0 END) as invalid_calls,
-        SUM(CASE WHEN auth_mode = '0x40' THEN 1 ELSE 0 END) as two_factor_calls,
-        SUM(CASE WHEN auth_mode = '0x42' THEN 1 ELSE 0 END) as three_factor_calls,
-        AVG(TIMESTAMPDIFF(MICROSECOND, exec_start_time, exec_end_time) / 1000) as avg_response_time_ms
-      FROM 
-        t_service_log
-      LEFT JOIN 
-        t_org_info ON t_service_log.org_id = t_org_info.org_id
-      WHERE 
-        DATE(exec_start_time) BETWEEN ? AND ?
-      GROUP BY 
-        t_service_log.org_id, t_org_info.org_name
-      ORDER BY 
-        total_calls DESC`,
-      [startDate, endDate],
-      CACHE_TTL // 启用缓存
-    );
-    
-    // Get result codes per organization
-    const resultCodesQuery = `
+      // 根据不同时间周期构建日期筛选条件
+      let dateFilter;
+    if (period === 'year') {
+        const year = dateParam.split('-')[0];
+        dateFilter = `YEAR(exec_start_time) = ${year}`;
+    } else if (period === 'month') {
+        const [year, month] = dateParam.split('-');
+        dateFilter = `YEAR(exec_start_time) = ${year} AND MONTH(exec_start_time) = ${month}`;
+      } else { // day
+        dateFilter = `DATE(exec_start_time) = '${dateParam}'`;
+      }
+  
+      // 查询组织调用统计
+      const orgStatsQuery = `
       SELECT 
-        org_id,
-        result_code,
-        result_msg,
-        COUNT(*) as count,
-        SUM(CASE WHEN auth_mode = '0x40' THEN 1 ELSE 0 END) as two_factor_count,
-        SUM(CASE WHEN auth_mode = '0x42' THEN 1 ELSE 0 END) as three_factor_count
-      FROM 
-        t_service_log
+          o.org_id,
+          o.org_name AS organizationName,
+          COUNT(*) AS total,
+          SUM(CASE WHEN l.result_code IN (${validCodesStr}) THEN 1 ELSE 0 END) AS validTotal,
+          SUM(CASE WHEN l.result_code NOT IN (${validCodesStr}) THEN 1 ELSE 0 END) AS invalidTotal,
+          AVG(l.cost_time) AS avgResponseTime
+        FROM 
+          t_service_log l
+        JOIN 
+          t_org_info o ON l.org_id = o.org_id
       WHERE 
-        DATE(exec_start_time) BETWEEN ? AND ?
+          ${dateFilter}
       GROUP BY 
-        org_id, result_code, result_msg
+          o.org_id, o.org_name
       ORDER BY 
-        org_id, count DESC
-    `;
-    
-    const resultCodesData = await query(
-      `SELECT 
-        org_id,
-        result_code,
-        result_msg,
-        COUNT(*) as count,
-        SUM(CASE WHEN auth_mode = '0x40' THEN 1 ELSE 0 END) as two_factor_count,
-        SUM(CASE WHEN auth_mode = '0x42' THEN 1 ELSE 0 END) as three_factor_count
-      FROM 
-        t_service_log
-      WHERE 
-        DATE(exec_start_time) BETWEEN ? AND ?
-      GROUP BY 
-        org_id, result_code, result_msg
-      ORDER BY 
-        org_id, count DESC`,
-      [startDate, endDate],
-      CACHE_TTL // 启用缓存
-    );
-    
-    // Organize result codes by org_id
-    const resultCodesByOrg: Record<string, ResultCode[]> = {};
-    for (const row of resultCodesData as any[]) {
-      if (row?.org_id) {
-        const orgId = String(row.org_id);
-        if (!resultCodesByOrg[orgId]) {
-          resultCodesByOrg[orgId] = [];
+          total DESC
+      `;
+      
+      console.log('执行SQL查询:', orgStatsQuery);
+      
+      // 执行查询
+      const orgData = await query(
+        orgStatsQuery,
+        [],
+        ORG_STATS_CACHE_TTL
+      );
+  
+      // 处理查询结果，确保返回的数据格式正确
+      const formattedData = orgData.map(org => {
+        const total = Number(org.total || 0);
+        const validTotal = Number(org.validTotal || 0);
+        const invalidTotal = Number(org.invalidTotal || 0);
+        
+        // 计算有效率
+        const validPercentage = total > 0 ? (validTotal / total) * 100 : 0;
+        
+        return {
+          org_id: org.org_id,
+          organizationName: org.organizationName || '未知客户',
+          total,
+          validTotal,
+          invalidTotal,
+          validPercentage: parseFloat(validPercentage.toFixed(1)),
+          avgResponseTime: Number(org.avgResponseTime || 0)
+        };
+      });
+      
+      console.log(`查询到 ${formattedData.length} 条组织数据`);
+      
+      // 如果查询结果为空，提供提示
+      if (formattedData.length === 0) {
+        console.log('未查询到组织数据，尝试检查数据库连接和表数据');
+      }
+      
+      // 返回结果时包含元数据
+      return NextResponse.json({
+        success: true,
+        data: formattedData,
+        meta: {
+          fetchTime,
+          period,
+          date: dateParam,
+          ttl: ORG_STATS_CACHE_TTL
         }
-        if (resultCodesByOrg[orgId].length < 5) { // Limit to top 5 per org
-          resultCodesByOrg[orgId].push({
-            result_code: String(row.result_code || ''),
-            result_msg: String(row.result_msg || ''),
-            count: Number(row.count || 0),
-            two_factor_count: Number(row.two_factor_count || 0),
-            three_factor_count: Number(row.three_factor_count || 0)
-          });
-        }
-      }
+      });
+    } catch (queryError: any) {
+      console.error('组织统计数据库查询错误:', queryError);
+      return NextResponse.json({
+        success: false,
+        error: `数据库查询失败: ${queryError.message || queryError}`
+      }, { status: 500 });
     }
-    
-    // Get previous period for comparison
-    let prevStartDate, prevEndDate;
-    
-    if (period === 'year') {
-      const year = currentDate.getFullYear() - 1;
-      prevStartDate = `${year}-01-01`;
-      prevEndDate = `${year}-12-31`;
-    } else if (period === 'month') {
-      // Previous month
-      const prevMonth = new Date(currentDate);
-      prevMonth.setMonth(prevMonth.getMonth() - 1);
-      const year = prevMonth.getFullYear();
-      const month = prevMonth.getMonth() + 1;
-      const lastDay = new Date(year, month, 0).getDate();
-      
-      prevStartDate = `${year}-${month.toString().padStart(2, '0')}-01`;
-      prevEndDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay}`;
-    } else {
-      // Previous day
-      const prevDay = new Date(currentDate);
-      prevDay.setDate(prevDay.getDate() - 1);
-      prevStartDate = prevDay.toISOString().split('T')[0];
-      prevEndDate = prevDay.toISOString().split('T')[0];
-    }
-    
-    // Get previous period stats for comparison
-    const prevOrgStats = await query(
-      `SELECT 
-        org_id,
-        COUNT(*) as total_calls
-      FROM 
-        t_service_log
-      WHERE 
-        DATE(exec_start_time) BETWEEN ? AND ?
-      GROUP BY 
-        org_id`,
-      [prevStartDate, prevEndDate],
-      CACHE_TTL // 启用缓存
-    );
-    
-    // Create a map of previous period stats by org_id for easier lookup
-    const prevStatsMap: Record<string, number> = {};
-    for (const stat of prevOrgStats as any[]) {
-      if (stat?.org_id && typeof stat.total_calls !== 'undefined') {
-        prevStatsMap[String(stat.org_id)] = Number(stat.total_calls);
-      }
-    }
-    
-    // Calculate change percentages for each organization
-    const enrichedOrgStats = (orgStats as any[]).map(org => {
-      const orgId = org?.org_id ? String(org.org_id) : '';
-      const total_calls = Number(org?.total_calls || 0);
-      const prevTotal = orgId ? (prevStatsMap[orgId] || 0) : 0;
-      
-      let change = 0;
-      let changePercentage = 0;
-      
-      if (prevTotal > 0) {
-        change = total_calls - prevTotal;
-        changePercentage = (change / prevTotal) * 100;
-      }
-      
-      return {
-        ...org,
-        change,
-        changePercentage,
-        top_result_codes: orgId ? (resultCodesByOrg[orgId] || []) : []
-      };
-    });
-    
-    // 构造结果
-    const result = {
-      period,
-      startDate,
-      endDate,
-      data: enrichedOrgStats
-    };
-    
-    // 将结果存入缓存
-    queryCache.set(cacheKey, [], result, CACHE_TTL);
-    
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('Error fetching organization statistics:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch organization statistics' },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    console.error('组织统计API错误:', error);
+    return NextResponse.json({
+      success: false,
+      error: `获取组织统计失败: ${error.message || error}`
+    }, { status: 500 });
   }
 } 

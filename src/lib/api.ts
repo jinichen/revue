@@ -20,10 +20,11 @@ const defaultOptions: RequestInit = {
  * Generic API response type
  */
 export interface ApiResponse<T> {
-  data: T;
-  status: number;
-  message: string;
   success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+  status?: number;
 }
 
 /**
