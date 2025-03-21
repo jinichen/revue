@@ -54,15 +54,11 @@ npm install
 ```
 
 3. Configure environment variables
-Create a `.env.local` file with the following parameters:
+Copy the `.env.local.example` file to `.env.local` and configure the necessary parameters:
+```bash
+cp .env.local.example .env.local
 ```
-DB_HOST=your-db-host
-DB_PORT=3306
-DB_NAME=platform_log
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
-PORT=3000
-```
+Then edit the `.env.local` file to set your database connection information and other configuration options.
 
 4. Run development server
 ```bash
