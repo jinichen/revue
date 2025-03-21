@@ -44,7 +44,7 @@ Revue is a Next.js-based platform for monitoring, analyzing, and managing API ca
 
 1. Clone the repository
 ```bash
-git clone [repository-url]
+git clone https://github.com/jinichen/revue
 cd revue
 ```
 
